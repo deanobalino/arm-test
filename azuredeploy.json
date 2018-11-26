@@ -82,7 +82,6 @@
           "Application_Type": "web"
         },
         "dependsOn": [
-            "[concat('Microsoft.Resources/resourceGroups/', variables('appRgName'))]"
           ]
       },
       {
@@ -93,7 +92,6 @@
         "location": "[parameters('location')]",
         "comments": "App Service Plan that contains the three Web Apps",
         "dependsOn": [
-            "[concat('Microsoft.Resources/resourceGroups/', variables('appRgName'))]"
         ],
         "sku": {
           "name": "b1"
@@ -129,8 +127,7 @@
           }
         ],
         "dependsOn": [
-          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
-          "[concat('Microsoft.Resources/resourceGroups/', variables('appRgName'))]"
+          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
         ]
       },
       {
@@ -163,9 +160,7 @@
           }
         ],
         "dependsOn": [
-          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
-          "[concat('Microsoft.Resources/resourceGroups/', variables('appRgName'))]"
-        ]
+          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"        ]
       },
       {
         "type": "Microsoft.Web/sites",
@@ -195,9 +190,7 @@
           }
         ],
         "dependsOn": [
-          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
-          "[concat('Microsoft.Resources/resourceGroups/', variables('appRgName'))]"
-        ]
+          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"        ]
       }
   ]
 }
