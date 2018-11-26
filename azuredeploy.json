@@ -86,7 +86,7 @@
       },
       {
         "type": "Microsoft.Web/serverfarms",
-        "apiVersion": "2016-08-01",
+        "apiVersion": "2018-02-01",
         "kind": "linux",
         "name": "[variables('appServicePlanName')]",
         "location": "[parameters('location')]",
