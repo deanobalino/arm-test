@@ -57,7 +57,14 @@
         "metadata": {
              "description": "Please enter your desired Database Password"
          }
-    }
+    },
+    "cosmosConnectionString": {
+      "type": "string",
+      "metadata": {
+           "description": "cosmosDb Connection String"
+       }
+  }
+    
   },
     "variables" : {
         "appRgName" : "[concat('lp5-s4-app-', parameters('userName'))]",
