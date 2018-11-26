@@ -1,0 +1,203 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "userName": {
+       "type": "string",
+       "metadata": {
+            "description": "Please enter your alias / username"
+        }
+    },
+    "location": {
+      "type": "string",
+      "allowedValues": [
+        "eastasia",
+        "southeastasia",
+        "centralus",
+        "eastus",
+        "eastus2",
+        "westus",
+        "northcentralus",
+        "southcentralus",
+        "northeurope",
+        "westeurope",
+        "japanwest",
+        "japaneast",
+        "brazilsouth",
+        "australiaeast",
+        "australiasoutheast",
+        "southindia",
+        "centralindia",
+        "westindia",
+        "canadacentral",
+        "canadaeast",
+        "uksouth",
+        "ukwest",
+        "westcentralus",
+        "westus2",
+        "koreacentral",
+        "koreasouth",
+        "francecentral",
+        "francesouth",
+        "australiacentral",
+        "australiacentral2"
+      ],
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "dbUser": {
+        "type": "string",
+        "metadata": {
+             "description": "Please enter your desired Database Password"
+         }
+    },
+    "dbPass": {
+        "type": "string",
+        "metadata": {
+             "description": "Please enter your desired Database Password"
+         }
+    }
+  },
+    "variables" : {
+        "appRgName" : "[concat('lp5-s4-app-', parameters('userName'))]",
+        "dbRgName" : "[concat('lp5-s4-db-', parameters('userName'))]",
+        "appServicePlanName": "[concat('tailwind-svcs-',variables('appRgName'))]",
+        "frontEndAppName": "[concat('tailwind-frontend-',variables('appRgName'))]",
+        "inventoryAppName": "[concat('tailwind-inventory-',variables('appRgName'))]",
+        "productAppName": "[concat('tailwind-product-',variables('appRgName'))]",
+        "PRODUCT_SERVICE_BASE_URL" : "[concat('http://' , variables('productAppName') , '.azurewebsites.net')]",
+        "INVENTORY_SERVICE_BASE_URL" : "[concat('http://' , variables('inventoryAppName') , '.azurewebsites.net')]",
+        "APPINSIGHTS_INSTRUMENTATIONKEY" : "foo",
+        "serverName" : "[concat('tailwind-sql-server-',variables('dbRgName'))]"
+    },
+  "resources": [
+    {
+        "type": "microsoft.insights/components",
+        "name": "[variables('appRgName')]",
+        "apiVersion": "2014-04-01",
+        "location": "[parameters('location')]",
+        "kind": "web",
+        "properties": {
+          "Application_Type": "web"
+        },
+        "dependsOn": [
+            "[concat('Microsoft.Resources/resourceGroups/', variables('appRgName'))]"
+          ]
+      },
+      {
+        "type": "Microsoft.Web/serverfarms",
+        "apiVersion": "2016-08-01",
+        "kind": "linux",
+        "name": "[variables('appServicePlanName')]",
+        "location": "[parameters('location')]",
+        "comments": "App Service Plan that contains the three Web Apps",
+        "dependsOn": [
+            "[concat('Microsoft.Resources/resourceGroups/', variables('appRgName'))]"
+        ],
+        "sku": {
+          "name": "b1"
+        }
+      },
+      {
+        "type": "Microsoft.Web/sites",
+        "apiVersion": "2016-08-01",
+        "kind": "app",
+        "name": "[variables('frontendAppName')]",
+        "location": "[parameters('location')]",
+        "comments": "Frontend App for Tailwind",
+        "properties": {
+          "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+          "siteConfig": {
+            "linuxFxVersion": "node|8.11"
+          }
+        },
+        "resources": [
+          {
+            "apiVersion": "2015-08-01",
+            "location": "[parameters('location')]",
+            "type": "config",
+            "name": "appsettings",
+            "dependsOn": [
+              "[concat('Microsoft.Web/sites/', variables('frontEndAppName'))]"
+            ],
+            "properties": {
+              "PRODUCT_SERVICE_BASE_URL": "[variables('PRODUCT_SERVICE_BASE_URL')]",
+              "INVENTORY_SERVICE_BASE_URL": "[variables('INVENTORY_SERVICE_BASE_URL')]",
+              "APPINSIGHTS_INSTRUMENTATIONKEY": "[variables('APPINSIGHTS_INSTRUMENTATIONKEY')]",
+              "COLLECTION_NAME": "inventory"          }
+          }
+        ],
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+          "[concat('Microsoft.Resources/resourceGroups/', variables('appRgName'))]"
+        ]
+      },
+      {
+        "type": "Microsoft.Web/sites",
+        "apiVersion": "2016-08-01",
+        "kind": "app",
+        "name": "[variables('inventoryAppName')]",
+        "location": "[parameters('location')]",
+        "comments": "Inventory App for Tailwind",
+        "properties": {
+          "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+          "siteConfig": {
+            "linuxFxVersion": "DOTNETCORE|2.1"
+          }
+        },
+        "resources": [
+          {
+            "apiVersion": "2015-08-01",
+            "location": "[parameters('location')]",
+            "type": "config",
+            "name": "appsettings",
+            "dependsOn": [
+              "[concat('Microsoft.Web/sites/', variables('inventoryAppName'))]"
+            ],
+            "properties": {
+              "APPINSIGHTS_INSTRUMENTATIONKEY": "[variables('APPINSIGHTS_INSTRUMENTATIONKEY')]",
+              "InventoryContext": "[concat('Server=tcp:' , variables('serverName') , '.database.windows.net,1433;Initial Catalog=tailwind;Persist Security Info=False;User ID=', parameters('dbUser'), ';Password=', parameters('dbPass'), ';MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;')]",
+              "appCommandLine": "dotnet InventoryService.Api.dll"
+            }
+          }
+        ],
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+          "[concat('Microsoft.Resources/resourceGroups/', variables('appRgName'))]"
+        ]
+      },
+      {
+        "type": "Microsoft.Web/sites",
+        "apiVersion": "2016-08-01",
+        "kind": "app",
+        "name": "[variables('productAppName')]",
+        "location": "[parameters('location')]",
+        "comments": "Product App for Tailwind",
+        "properties": {
+          "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+          "siteConfig": {
+            "linuxFxVersion": "node|8.11"
+          }
+        },
+        "resources": [
+          {
+            "apiVersion": "2015-08-01",
+            "location": "[parameters('location')]",
+            "type": "config",
+            "name": "appsettings",
+            "dependsOn": [
+              "[concat('Microsoft.Web/sites/', variables('productAppName'))]"
+            ],
+            "properties": {
+              "APPINSIGHTS_INSTRUMENTATIONKEY": "[variables('APPINSIGHTS_INSTRUMENTATIONKEY')]",
+              "COLLECTION_NAME": "inventory"          }
+          }
+        ],
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+          "[concat('Microsoft.Resources/resourceGroups/', variables('appRgName'))]"
+        ]
+      }
+  ]
+}
